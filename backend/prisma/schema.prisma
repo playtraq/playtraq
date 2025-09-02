@@ -1,0 +1,125 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String         @id @default(cuid())
+  email         String         @unique
+  username      String         @unique
+  password      String
+  bio           String?
+  avatar        String?
+  games         UserGame[]
+  reviews       Review[]
+  lists         List[]
+  following     User[]         @relation("UserFollows")
+  followers     User[]         @relation("UserFollows")
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model Game {
+  id            Int            @id // Using RAWG's ID directly
+  slug          String         @unique
+  title         String
+  description   String?
+  released      String?
+  releaseYear   Int?
+  coverImage    String?
+  metacritic    Int?
+  rating        Float?
+  ratingCount   Int?
+  playtime      Int?           // Average playtime in hours
+  esrbRating    String?
+  website       String?
+  lastFetched   DateTime       @default(now())
+  
+  // Arrays stored as JSON
+  genres        Json?
+  platforms     Json?
+  stores        Json?
+  developers    Json?
+  publishers    Json?
+  screenshots   Json?
+  tags          Json?
+  
+  // Relations
+  userGames     UserGame[]
+  reviews       Review[]
+  lists         List[]
+  
+  @@index([slug])
+  @@index([title])
+  @@index([releaseYear])
+}
+
+model UserGame {
+  id            String         @id @default(cuid())
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String
+  game          Game           @relation(fields: [gameId], references: [id])
+  gameId        Int
+  status        GameStatus
+  hoursPlayed   Float?
+  startDate     DateTime?
+  completedDate DateTime?
+  addedAt       DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@unique([userId, gameId])
+  @@index([userId, status])
+}
+
+model Review {
+  id            String         @id @default(cuid())
+  rating        Float
+  content       String?
+  spoilers      Boolean        @default(false)
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String
+  game          Game           @relation(fields: [gameId], references: [id])
+  gameId        Int
+  likes         Int            @default(0)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  
+  @@unique([userId, gameId])
+}
+
+model List {
+  id            String         @id @default(cuid())
+  name          String
+  description   String?
+  isPublic      Boolean        @default(true)
+  user          User           @relation(fields: [userId], references: [id])
+  userId        String
+  games         Game[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+enum GameStatus {
+  PLAYING
+  COMPLETED
+  WANT_TO_PLAY
+  DROPPED
+  ON_HOLD
+}
+model SyncLog {
+  id            String         @id @default(cuid())
+  syncType      String         
+  startDate     DateTime
+  endDate       DateTime?
+  gamesFound    Int?
+  gamesSynced   Int?
+  lastGameId    Int?           
+  lastPage      Int?
+  status        String         
+  error         String?
+  createdAt     DateTime       @default(now())
+}
