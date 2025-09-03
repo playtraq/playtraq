@@ -103,13 +103,6 @@ model List {
   updatedAt     DateTime       @updatedAt
 }
 
-enum GameStatus {
-  PLAYING
-  COMPLETED
-  WANT_TO_PLAY
-  DROPPED
-  ON_HOLD
-}
 model SyncLog {
   id            String         @id @default(cuid())
   syncType      String         
@@ -122,4 +115,84 @@ model SyncLog {
   status        String         
   error         String?
   createdAt     DateTime       @default(now())
+  source        String?        // 'rawg' or 'igdb'
+  lastOffset    Int?           // For IGDB offset tracking
+}
+
+model IgdbGame {
+  id                    Int       @id
+  name                  String
+  slug                  String?
+  summary               String?
+  storyline             String?
+  firstReleaseDate      DateTime?
+  releaseYear           Int?
+  coverUrl              String?
+  screenshots           String[]
+  videos                Json?
+  artworks              String[]
+  igdbRating           Float?
+  aggregatedRating     Float?
+  ratingCount          Int?
+  aggregatedRatingCount Int?
+  totalRating          Float?
+  totalRatingCount     Int?
+  category             Int?
+  status               Int?
+  genres               String[]
+  themes               String[]
+  gameModes            String[]
+  playerPerspectives   String[]
+  platforms            String[]
+  keywords             String[]
+  developers           String[]
+  publishers           String[]
+  involvedCompanies    Json?
+  similarGames         Int[]
+  parentGame           Int?
+  franchises           Int[]
+  externalGames        Json?
+  websites             Json?
+  ageRatings           Json?
+  multiplayerModes     Json?
+  timeToBeat           Json?
+  checksum             String?
+  versionTitle         String?
+  lastFetched          DateTime  @default(now())
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  potentialRawgId      Int?
+  matchConfidence      Float?
+  
+  @@index([name])
+  @@index([slug])
+  @@index([releaseYear])
+}
+
+model GameMatch {
+  id              Int      @id @default(autoincrement())
+  rawgId          Int
+  igdbId          Int
+  confidence      Float
+  matchMethod     String
+  titleMatch      Boolean
+  yearMatch       Boolean
+  platformMatch   Boolean
+  developerMatch  Boolean
+  status          String   @default("pending")
+  mergedAt        DateTime?
+  createdAt       DateTime @default(now())
+  reviewedAt      DateTime?
+  reviewedBy      String?
+  
+  @@unique([rawgId, igdbId])
+  @@index([status])
+}
+
+enum GameStatus {
+  PLAYING
+  COMPLETED
+  WANT_TO_PLAY
+  DROPPED
+  ON_HOLD
 }

@@ -11,7 +11,10 @@
     "sync:check": "node check-games.js",
     "sync:stats": "node -e \"require('./dbSyncService').getSyncStats().then(s => console.log(s))\"",
     "sync:setup": "bash setup-cron.sh",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "igdb:full": "node igdbFullSync.js",
+    "igdb:check": "node checkIgdbSync.js",
+    "igdb:stats": "node checkIgdbSync.js"
   },
   "keywords": [],
   "author": "",
