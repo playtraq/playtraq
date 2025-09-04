@@ -189,6 +189,309 @@ model GameMatch {
   @@index([status])
 }
 
+// ============================================
+// STEAM DATABASE (Complete, separate data)
+// ============================================
+
+model SteamApp {
+  appId                 Int            @id // Steam's app ID
+  name                  String
+  type                  String?        // game, dlc, demo, advertising, mod, video
+  requiredAge           Int?
+  isFree                Boolean?
+  detailedDescription   String?
+  aboutTheGame          String?
+  shortDescription      String?
+  supportedLanguages    String?
+  headerImage           String?
+  capsuleImage          String?
+  capsuleImageV5        String?
+  website               String?
+  pcRequirements        Json?
+  macRequirements       Json?
+  linuxRequirements     Json?
+  legalNotice           String?
+  developers            String[]
+  publishers            String[]
+  priceOverview         Json?          // current_price, initial_price, discount_percent, etc.
+  packages              Int[]
+  packageGroups         Json?
+  platforms             Json?          // windows, mac, linux booleans
+  metacritic            Json?          // score, url
+  categories            Json?          // multiplayer, co-op, cloud saves, etc.
+  genres                Json?          // id, description pairs
+  screenshots           Json?
+  movies                Json?          // mp4, webm urls
+  recommendations       Int?           // total recommendations count
+  achievements          Json?          // total, highlighted
+  releaseDate           Json?          // coming_soon, date
+  supportInfo           Json?          // url, email
+  background            String?
+  backgroundRaw         String?
+  contentDescriptors    Json?
+  
+  // Player and review data
+  currentPlayers        Int?           // Current players online
+  peakToday            Int?           // Peak players today
+  peakAllTime          Int?           // All-time peak
+  peakAllTimeDate      DateTime?      // When peak occurred
+  
+  // Review data from Steam Reviews API
+  reviewScore          Int?           // 0-10 score
+  reviewScoreDesc      String?        // "Mostly Positive", etc.
+  totalPositive        Int?
+  totalNegative        Int?
+  totalReviews         Int?
+  
+  // Additional Steam features
+  hasTradingCards      Boolean?
+  hasMarketplace       Boolean?
+  hasWorkshop          Boolean?
+  workshopItemCount    Int?
+  hasCommunityHub      Boolean?
+  hasLeaderboards      Boolean?
+  hasCloudSaves        Boolean?
+  hasAchievements      Boolean?
+  achievementCount     Int?
+  controllerSupport    String?        // full, partial
+  
+  // DLC and related apps
+  dlcCount             Int?
+  dlcAppIds            Int[]
+  
+  // Tags from Steam store
+  userTags             Json?          // Popular user-defined tags
+  
+  // Historical data
+  historicalLow        Float?
+  historicalLowDate    DateTime?
+  
+  // Tracking
+  lastFullUpdate       DateTime?      @default(now())
+  lastQuickUpdate      DateTime?      @default(now())
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  
+  @@index([name])
+  @@index([currentPlayers])
+  @@index([peakAllTime])
+  @@index([reviewScore])
+  @@index([type])
+}
+
+// Store Steam player count history
+model SteamPlayerHistory {
+  id              Int      @id @default(autoincrement())
+  appId           Int
+  playerCount     Int
+  timestamp       DateTime @default(now())
+  
+  @@index([appId, timestamp])
+}
+
+// ============================================
+// CHEAPSHARK DATABASE (Complete, separate data)
+// ============================================
+
+model CheapSharkGame {
+  gameId          String         @id // CheapShark's internal game ID
+  title           String
+  steamAppId      String?        // String because CS returns it as string
+  thumb           String?        // Thumbnail image
+  
+  // All available deals for this game
+  cheapest        Float?         // Current cheapest price
+  cheapestDealId  String?        // ID of cheapest deal
+  
+  // Store availability (which stores have this game)
+  storeIds        String[]       // Array of store IDs
+  
+  // Historical data
+  historicalLow   Float?
+  historicalLowDate DateTime?
+  
+  lastUpdated     DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  
+  @@index([title])
+  @@index([steamAppId])
+}
+
+// Individual deals/prices
+model CheapSharkDeal {
+  dealId          String         @id
+  gameId          String         // FK to CheapSharkGame
+  title           String
+  storeId         String
+  storeName       String?
+  salePrice       Float
+  normalPrice     Float
+  savings         Float          // Percentage
+  metacriticScore Int?
+  metacriticLink  String?
+  steamRatingText String?        // Steam review text
+  steamRatingPercent Int?        // Steam positive percentage
+  steamRatingCount Int?          // Total Steam reviews
+  steamAppId      String?
+  releaseDate     DateTime?
+  lastChange      DateTime?      // When price last changed
+  dealRating      Float?         // CheapShark's deal rating 0-10
+  thumb           String?
+  isOnSale        Boolean        @default(true)
+  
+  lastUpdated     DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  
+  @@index([gameId])
+  @@index([storeId])
+  @@index([savings])
+  @@index([isOnSale])
+  @@index([steamAppId])
+}
+
+// Store information
+model CheapSharkStore {
+  storeId         String         @id
+  storeName       String
+  isActive        Boolean
+  images          Json?          // logo, banner, icon URLs
+  
+  lastUpdated     DateTime       @default(now())
+}
+
+// Price alerts tracking
+model CheapSharkAlert {
+  id              Int            @id @default(autoincrement())
+  gameId          String
+  email           String?
+  targetPrice     Float
+  createdAt       DateTime       @default(now())
+  
+  @@index([gameId])
+}
+
+// ============================================
+// TWITCH DATABASE (Complete, separate data)
+// ============================================
+
+model TwitchGame {
+  id              String         @id // Twitch game ID (they use strings)
+  name            String
+  boxArtUrl       String?
+  igdbId          String?        // IGDB ID if available
+  
+  // Current streaming stats
+  currentViewers  Int?
+  currentChannels Int?
+  
+  // Calculated metrics
+  peakViewersToday Int?
+  peakViewersWeek Int?
+  peakViewersMonth Int?
+  peakViewersAllTime Int?
+  avgViewersDay   Float?
+  avgViewersWeek  Float?
+  avgViewersMonth Float?
+  
+  // Top streamers currently
+  topStreamers    Json?          // Array of {name, viewers, language}
+  
+  // Language breakdown
+  languageBreakdown Json?        // {en: 5000, es: 2000, etc}
+  
+  // Tags associated
+  tags            String[]
+  
+  lastUpdated     DateTime       @default(now())
+  createdAt       DateTime       @default(now())
+  
+  @@index([name])
+  @@index([currentViewers])
+  @@index([igdbId])
+}
+
+// Historical viewer data
+model TwitchViewerHistory {
+  id              Int            @id @default(autoincrement())
+  gameId          String         // FK to TwitchGame.id
+  viewers         Int
+  channels        Int
+  timestamp       DateTime       @default(now())
+  
+  @@index([gameId, timestamp])
+}
+
+// Track top streams
+model TwitchStream {
+  id              String         @id // Stream ID
+  gameId          String         // FK to TwitchGame.id
+  gameName        String
+  userId          String         // Twitch user ID
+  userName        String
+  userDisplayName String
+  title           String         // Stream title
+  viewerCount     Int
+  startedAt       DateTime
+  language        String
+  thumbnailUrl    String?
+  tags            String[]
+  isMature        Boolean        @default(false)
+  
+  capturedAt      DateTime       @default(now())
+  
+  @@index([gameId])
+  @@index([viewerCount])
+  @@index([startedAt])
+}
+
+// Track Twitch clips (viral moments)
+model TwitchClip {
+  id              String         @id
+  gameId          String
+  broadcasterId   String
+  broadcasterName String
+  creatorId       String
+  creatorName     String
+  title           String
+  viewCount       Int
+  createdAt       DateTime
+  duration        Float          // seconds
+  thumbnailUrl    String?
+  embedUrl        String?
+  url             String
+  videoId         String?
+  vodOffset       Int?
+  language        String
+  
+  capturedAt      DateTime       @default(now())
+  
+  @@index([gameId])
+  @@index([viewCount])
+  @@index([createdAt])
+}
+
+// ============================================
+// SYNC TRACKING FOR EXTERNAL APIS
+// ============================================
+
+model ExternalApiSync {
+  id              String         @id @default(cuid())
+  service         String         // 'steam', 'cheapshark', 'twitch'
+  syncType        String         // 'full', 'update', 'trending', 'historical'
+  startDate       DateTime
+  endDate         DateTime?
+  itemsProcessed  Int?
+  itemsAdded      Int?
+  itemsUpdated    Int?
+  success         Boolean        @default(false)
+  error           String?
+  metadata        Json?          // Service-specific metadata
+  createdAt       DateTime       @default(now())
+  
+  @@index([service, syncType])
+  @@index([createdAt])
+}
+
 enum GameStatus {
   PLAYING
   COMPLETED
